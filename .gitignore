@@ -1,0 +1,10 @@
+# Nunca subir datos reales ni credenciales al repositorio.
+data/
+.streamlit/secrets.toml
+
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+*.egg-info/

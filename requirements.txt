@@ -1,0 +1,8 @@
+streamlit==1.50.0
+pandas==2.3.3
+openpyxl==3.1.5
+plotly==7.1.0
+xlsxwriter==3.2.9
+reportlab==5.0.1
+bcrypt==5.0.0
+libsql-client==0.3.1
