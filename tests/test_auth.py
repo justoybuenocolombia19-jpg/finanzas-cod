@@ -135,3 +135,11 @@ def test_listar_usuarios_e_invitaciones(central):
     inv = {i["codigo"]: i for i in auth.listar_invitaciones(central)}
     assert inv[c1]["usado_por"] == "empleado@negocio.com" and inv[c2]["usado_por"] is None
     assert len(auth.listar_usuarios(central)) == 2
+
+
+def test_url_libsql_se_convierte_a_https():
+    """Turso da la URL como 'libsql://...' (WebSocket, falla en Streamlit Cloud); se usa
+    HTTP en su lugar. El usuario debe poder pegar la URL tal cual se la da Turso."""
+    assert cloud_db._url_http("libsql://mi-base.turso.io") == "https://mi-base.turso.io"
+    assert cloud_db._url_http("https://ya-es-http.turso.io") == "https://ya-es-http.turso.io"
+    assert cloud_db._url_http("  libsql://con-espacios.turso.io  ") == "https://con-espacios.turso.io"

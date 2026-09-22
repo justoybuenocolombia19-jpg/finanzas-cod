@@ -49,6 +49,33 @@ def dividir_sql(script: str) -> list:
     return [s.strip() for s in sin_comentarios.split(";") if s.strip()]
 
 
+class _FilaNube:
+    """Envuelve una Row de libsql_client para que se comporte como sqlite3.Row: acepta
+    fila["columna"], fila[0] Y dict(fila). La Row real de libsql_client no tiene .keys(),
+    así que dict(fila) revienta si no se envuelve (a diferencia de sqlite3.Row, que sí
+    lo soporta — por eso este puente hace falta)."""
+
+    __slots__ = ("_fila",)
+
+    def __init__(self, fila):
+        self._fila = fila
+
+    def __getitem__(self, key):
+        return self._fila[key]
+
+    def keys(self):
+        return self._fila._fields
+
+    def __iter__(self):
+        return iter(self._fila.astuple())  # como sqlite3.Row: iterar da los VALORES, no las llaves
+
+    def __len__(self):
+        return len(self._fila)
+
+    def __repr__(self):
+        return repr(dict(self))
+
+
 class _CursorNube:
     """Le da a un ResultSet de libsql_client la forma de un cursor sqlite3: fetchone,
     fetchall, lastrowid — para que el resto del código no note la diferencia."""
@@ -57,13 +84,13 @@ class _CursorNube:
         self._r = resultado
 
     def fetchone(self):
-        return self._r.rows[0] if self._r.rows else None
+        return _FilaNube(self._r.rows[0]) if self._r.rows else None
 
     def fetchall(self):
-        return list(self._r.rows)
+        return [_FilaNube(f) for f in self._r.rows]
 
     def __iter__(self):
-        return iter(self._r.rows)
+        return iter(self.fetchall())
 
     @property
     def lastrowid(self):
@@ -101,9 +128,20 @@ class ConexionNube:
         self._c.close()
 
 
+def _url_http(url: str) -> str:
+    """Turso da la URL como 'libsql://...', que por defecto conecta por WebSocket — en
+    despliegues como Streamlit Cloud esa conexión falla (handshake rechazado). Se usa
+    'https://...' en su lugar (mismo servidor, protocolo HTTP normal, más confiable aquí).
+    Así el usuario puede pegar la URL tal como se la da Turso, sin tener que pensarlo."""
+    url = (url or "").strip()
+    if url.startswith("libsql://"):
+        return "https://" + url[len("libsql://"):]
+    return url
+
+
 def _cliente(url: str, token: str):
     import libsql_client  # import perezoso: que no truene en modo local si el paquete faltara
-    return libsql_client.create_client_sync(url=url, auth_token=token)
+    return libsql_client.create_client_sync(url=_url_http(url), auth_token=token)
 
 
 def conectar_central(url: str, token: str) -> ConexionNube:

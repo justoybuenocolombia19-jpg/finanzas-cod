@@ -15,11 +15,36 @@ RAIZ = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, RAIZ)
 
 
+class _FilaFalsa:
+    """Imita exactamente la Row real de libsql_client (tiene `_fields`, NO tiene
+    `.keys()`) en vez de pasar un sqlite3.Row tal cual — que sí tiene `.keys()` y por
+    eso no habría detectado el bug real que apareció al probar contra Turso de verdad."""
+
+    def __init__(self, fila_sqlite):
+        self._campos = tuple(fila_sqlite.keys())
+        self._valores = tuple(fila_sqlite)
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            return self._valores[self._campos.index(key)]
+        return self._valores[key]
+
+    def astuple(self):
+        return self._valores
+
+    def __len__(self):
+        return len(self._valores)
+
+    @property
+    def _fields(self):
+        return self._campos
+
+
 class _ResultadoFalso:
     """Imita libsql_client.ResultSet, respaldado por un cursor sqlite3 real."""
 
     def __init__(self, cursor, filas):
-        self.rows = filas
+        self.rows = [_FilaFalsa(f) for f in filas]
         self.rows_affected = cursor.rowcount
         self.last_insert_rowid = cursor.lastrowid
 
