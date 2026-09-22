@@ -73,3 +73,10 @@ Interruptor en el menú izquierdo: base aparte con datos ficticios; no toca tus 
 
 ## Pruebas
 `. .venv/bin/activate && python -m pytest tests -q`
+
+## Modo nube (varias cuentas por invitación)
+La app también se puede publicar gratis en internet, con cuentas por invitación: cada
+persona ve solo sus propios paneles, con login (contraseñas con hash bcrypt) y bloqueo
+por intentos fallidos. Se activa solo si existen los secrets `TURSO_DATABASE_URL` y
+`TURSO_AUTH_TOKEN` — sin ellos, la app sigue funcionando exactamente igual que siempre,
+local y sin login. Pasos para publicarla: **[DEPLOY.md](DEPLOY.md)**.
